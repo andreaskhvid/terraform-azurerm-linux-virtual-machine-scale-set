@@ -27,7 +27,7 @@ output "identity" {
       * tenant_id - The Tenant ID of the System Assigned Managed Service Identity that is configured on this Virtual Machine Scale Set.
       * identity_ids - The list of User Assigned Managed Identity IDs assigned to this Virtual Machine Scale Set.
   DESC
-  value = var.identity == null ? tomap(null) : azurerm_linux_virtual_machine_scale_set.this.identity[0]
+  value       = var.identity == null ? tomap(null) : azurerm_linux_virtual_machine_scale_set.this.identity[0]
 }
 
 output "network_interfaces" {

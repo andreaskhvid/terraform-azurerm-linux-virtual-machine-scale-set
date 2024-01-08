@@ -4,9 +4,6 @@ settings:
   anchor: false
   lockfile: false
 
-output:
-  file: "README.md"
-
 content: |-
   {{ .Requirements }}
 

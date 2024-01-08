@@ -214,7 +214,7 @@ variable "capacity_reservation_group_id" {
 variable "computer_name_prefix" {
   description = "The prefix which should be used for the name of the Virtual Machines in this Scale Set. If unspecified this defaults to the value for the name field. If the value of the name field is not a valid `computer_name_prefix`, then you must specify `computer_name_prefix`. Changing this forces a new resource to be created."
   type        = string
-  default     = bool
+  default     = null
 }
 
 variable "custom_data" {
@@ -259,15 +259,15 @@ variable "data_disk" {
   default = null
 
   validation {
-    condition     = contains(["None", "ReadOnly", "ReadWrite"], var.data_disk.caching)
+    condition     = alltrue([for disk in var.data_disk : contains(["None", "ReadOnly", "ReadWrite"], var.data_disk.caching)])
     error_message = "Invalid `var.data_disk.caching` possible values are `None`, `ReadOnly` and `ReadWrite`."
   }
   validation {
-    condition     = try(contains(["Empty", "FromImage"], var.data_disk.create_option), true)
+    condition     = alltrue([for disk in var.data_disk : try(contains(["Empty", "FromImage"], var.data_disk.create_option), true)])
     error_message = "Invalid `var.data_disk.create_option` possible values are `Empty` and `FromImage`."
   }
   validation {
-    condition     = contains(["Standard_LRS", "StandardSSD_LRS", "StandardSSD_ZRS", "Premium_LRS", "Premium_ZRS"], var.data_disk.storage_account_type)
+    condition     = alltrue([for disk in var.data_disk : contains(["Standard_LRS", "StandardSSD_LRS", "StandardSSD_ZRS", "Premium_LRS", "Premium_ZRS"], var.data_disk.storage_account_type)])
     error_message = "Invalid `var.data_disk.storage_account_type` possible values are `Standard_LRS`, `StandardSSD_LRS`, `StandardSSD_ZRS`, `Premium_LRS` and `Premium_ZRS`."
   }
 }
@@ -367,7 +367,7 @@ variable "eviction_policy" {
   default     = null
 
   validation {
-    condition     = try(contains(["Deallocate", "Delete"], var.data_disk.create_option), true)
+    condition     = try(contains(["Deallocate", "Delete"], var.eviction_policy), true)
     error_message = "Invalid `var.eviction_policy` possible values are `Deallocate` and `Delete`."
   }
 }
@@ -382,10 +382,10 @@ variable "gallery_applications" {
       * tag - (Optional) Specifies a passthrough value for more generic context. This field can be any valid string value. Changing this forces a new resource to be created.
   DESC
   type = list(object({
-    version_id            = string
+    version_id             = string
     configuration_blob_uri = optional(string)
-    order                 = optional(number)
-    tag                   = optional(string)
+    order                  = optional(number)
+    tag                    = optional(string)
   }))
   default = null
 }
@@ -469,8 +469,8 @@ variable "priority" {
   default     = null
 
   validation {
-    condition     = try(contains(["Regular", "Spot"], var.identity.type), true)
-    error_message = "Invalid `var.priority` possible values are `SystemAssigned` and `Spot`."
+    condition     = try(contains(["Regular", "Spot"], var.priority), true)
+    error_message = "Invalid `var.priority` possible values are `Regular` and `Spot`."
   }
 }
 
