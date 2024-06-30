@@ -37,16 +37,20 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "network_interface" {
     for_each = var.network_interfaces
+
     content {
       name = network_interface.name
+
       dynamic "ip_configuration" {
         for_each = network_interface.ip_configuration
+
         content {
           name      = ip_configuration.name
           primary   = ip_configuration.primary
           subnet_id = ip_configuration.subnet_id
         }
       }
+
       dns_servers                   = network_interface.dns_servers
       enable_accelerated_networking = network_interface.enable_accelerated_networking
       enable_ip_forwarding          = network_interface.enable_ip_forwarding
@@ -58,13 +62,16 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
   os_disk {
     caching              = var.os_disk.caching
     storage_account_type = var.os_disk.storage_account_type
+
     dynamic "diff_disk_settings" {
       for_each = var.os_disk.diff_disk_settings == null ? {} : var.os_disk.diff_disk_settings
+
       content {
         option    = diff_disk_settings.option
         placement = diff_disk_settings.placement
       }
     }
+
     disk_encryption_set_id           = var.os_disk.disk_encryption_set_id
     disk_size_gb                     = var.os_disk.disk_size_gb
     secure_vm_disk_encryption_set_id = var.os_disk.secure_vm_disk_encryption_set_id
@@ -74,6 +81,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "additional_capabilities" {
     for_each = var.additional_capabilities == null ? [] : var.additional_capabilities
+
     content {
       ultra_ssd_enabled = additional_capabilities.ultra_ssd_enabled
     }
@@ -81,6 +89,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "admin_ssh_key" {
     for_each = var.admin_ssh_keys == null ? [] : var.admin_ssh_keys
+
     content {
       public_key = admin_ssh_key.public_key
       username   = admin_ssh_key.username
@@ -89,6 +98,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "automatic_os_upgrade_policy" {
     for_each = var.automatic_os_upgrade_policy == null ? {} : var.automatic_os_upgrade_policy
+
     content {
       disable_automatic_rollback  = automatic_os_upgrade_policy.disable_automatic_rollback
       enable_automatic_os_upgrade = automatic_os_upgrade_policy.enable_automatic_os_upgrade
@@ -97,6 +107,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "automatic_instance_repair" {
     for_each = var.automatic_instance_repair == null ? {} : var.automatic_instance_repair
+
     content {
       enabled      = automatic_instance_repair.enabled
       grace_period = automatic_instance_repair.grace_period
@@ -105,6 +116,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "boot_diagnostics" {
     for_each = var.boot_diagnostics == null ? {} : var.boot_diagnostics
+
     content {
       storage_account_uri = boot_diagnostics.storage_account_uri
     }
@@ -112,6 +124,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "data_disk" {
     for_each = var.data_disk == null ? [] : var.data_disk
+
     content {
       name                           = data_disk.name
       caching                        = data_disk.caching
@@ -128,6 +141,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "extension" {
     for_each = var.extensions == null ? [] : var.extensions
+
     content {
       name                       = extension.name
       publisher                  = extension.publisher
@@ -137,13 +151,16 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
       automatic_upgrade_enabled  = extension.automatic_upgrade_enabled
       force_update_tag           = extension.force_update_tag
       protected_settings         = extension.protected_settings
+
       dynamic "protected_settings_from_key_vault" {
         for_each = extension.protected_settings_from_key_vault == null ? {} : extension.protected_settings_from_key_vault
+
         content {
           secret_url      = protected_settings_from_key_vault.secret_url
           source_vault_id = protected_settings_from_key_vault.source_vault_id
         }
       }
+
       provision_after_extensions = extension.provision_after_extensions
       settings                   = extension.settings
     }
@@ -151,6 +168,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "gallery_application" {
     for_each = var.gallery_applications == null ? [] : var.gallery_applications
+
     content {
       version_id             = gallery_application.version_id
       configuration_blob_uri = gallery_application.configuration_blob_uri
@@ -161,6 +179,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "identity" {
     for_each = var.identity == null ? {} : var.identity
+
     content {
       type         = identity.type
       identity_ids = identity.identity_ids
@@ -169,6 +188,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "plan" {
     for_each = var.plan == null ? {} : var.plan
+
     content {
       name      = plan.name
       publisher = plan.publisher
@@ -178,6 +198,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "rolling_upgrade_policy" {
     for_each = var.rolling_upgrade_policy == null ? {} : var.rolling_upgrade_policy
+
     content {
       cross_zone_upgrades_enabled             = rolling_upgrade_policy.cross_zone_upgrades_enabled
       max_batch_instance_percent              = rolling_upgrade_policy.max_batch_instance_percent
@@ -190,6 +211,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "scale_in" {
     for_each = var.scale_in == null ? {} : var.scale_in
+
     content {
       rule                   = scale_in.rule
       force_deletion_enabled = scale_in.force_deletion_enabled
@@ -198,19 +220,23 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "secret" {
     for_each = var.secrets == null ? [] : var.secrets
+
     content {
       dynamic "certificate" {
         for_each = secret.certificate
+
         content {
           url = certificate.url
         }
       }
+
       key_vault_id = secret.key_vault_id
     }
   }
 
   dynamic "source_image_reference" {
     for_each = var.source_image_reference == null ? {} : var.source_image_reference
+
     content {
       publisher = source_image_reference.publisher
       offer     = source_image_reference.offer
@@ -221,6 +247,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "spot_restore" {
     for_each = var.spot_restore == null ? {} : var.spot_restore
+
     content {
       enabled = spot_restore.enabled
       timeout = spot_restore.timeout
@@ -229,6 +256,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
   dynamic "termination_notification" {
     for_each = var.termination_notification == null ? {} : var.termination_notification
+
     content {
       enabled = termination_notification.enabled
       timeout = termination_notification.timeout
