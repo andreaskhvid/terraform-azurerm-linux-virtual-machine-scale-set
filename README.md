@@ -13,7 +13,7 @@
 
 ## Description
 
-This Terraform resource module deploys a linux virtual machine scale set.
+This Terraform resource module deploys a linux virtual machine scale set. The module is used to test pre-commit.
 
 ## Changelog
 
@@ -82,21 +82,43 @@ Type: `string`
 Description: A list of one or more `network_interface` objects as defined below.  
 A `network_interface` object supports the following:
 
-- name - (Required) The Name which should be used for this Network Interface. Changing this forces a new resource to be created.
-- ip\_configuration - (Required) A list of `ip_configuration` objects as defined bwlow.
+- `name` - (Required) The Name which should be used for this Network Interface. Changing this forces a new resource to be created.
+- `ip_configurations` - (Required) A list of `ip_configurations` objects as defined below.
 
-  An `ip_configuration` object supports the following:
+  An `ip_configurations` object supports the following:
 
-  - name - (Required) The Name which should be used for this IP Configuration.
-  - application\_gateway\_backend\_address\_pool\_ids - (Optional) A list of Backend Address Pools ID`s from a Application Gateway which this Virtual Machine Scale Set should be connected to.
-  - application_security_group_ids - (Optional) A list of Application Security Group ID`s which this Virtual Machine Scale Set should be connected to.
-  - load\_balancer\_backend\_address\_pool\_ids - (Optional) A list of Backend Address Pools ID`s from a Load Balancer which this Virtual Machine Scale Set should be connected to.
+  - `name` - (Required) The Name which should be used for this IP Configuration.
+  - `application_gateway_backend_address_pool_ids` - (Optional) A list of Backend Address Pools ID`s from a Application Gateway which this Virtual Machine Scale Set should be connected to.
+  - `application\_security\_group\_ids` - (Optional) A list of Application Security Group ID`s which this Virtual Machine Scale Set should be connected to.
+  - `load_balancer_backend_address_pool_ids` - (Optional) A list of Backend Address Pools ID`s from a Load Balancer which this Virtual Machine Scale Set should be connected to.
 
-- dns_servers - (Optional) A list of IP Addresses of DNS Servers which should be assigned to the Network Interface.
-- enable_accelerated_networking - (Optional) Does this Network Interface support Accelerated Networking? Defaults to false.
-- enable_ip_forwarding - (Optional) Does this Network Interface support IP Forwarding? Defaults to false.
-- network_security_group_id - (Optional) The ID of a Network Security Group which should be assigned to this Network Interface.
-- primary - (Optional) Is this the Primary IP Configuration? Defaults to false.
+    > **NOTE**
+    >
+    > When the Virtual Machine Scale Set is configured to have public IPs per instance are created with a load balancer, the SKU of the Virtual Machine instance IPs is determined by the SKU of the Virtual Machine Scale Sets Load Balancer (e.g. `Basic` or `Standard`). Alternatively, you may use the `public\_ip\_prefix\_id` field to generate instance-level IPs in a virtual machine scale set as well. The zonal properties of the prefix will be passed to the Virtual Machine instance IPs, though they will not be shown in the output. To view the public IP addresses assigned to the Virtual Machine Scale Sets Virtual Machine instances use the **az vmss list-instance-public-ips --resource-group `ResourceGroupName` --name `VirtualMachineScaleSetName`** CLI command.
+    <!-- markdownlint-disable MD028 -->
+    > **NOTE**
+    >
+    > When using this field you'll also need to configure a Rule for the Load Balancer, and use a `depends\_on` between this resource and the Load Balancer Rule.
+
+  - `load\_balancer\_inbound\_nat\_rules\_ids` - (Optional) A list of NAT Rule ID's from a Load Balancer which this Virtual Machine Scale Set should be connected to.
+
+    > **NOTE**
+    >
+    > When using this field you'll also need to configure a Rule for the Load Balancer, and use a `depends\_on` between this resource and the Load Balancer Rule.
+
+  - `primary` - (Optional) Is this the Primary IP Configuration for this Network Interface? Defaults to `false`.
+
+    > **NOTE**
+    >
+    > One `ip\_configuration` object must be marked as Primary for each Network Interface.
+
+  - `subnet\_id` - (Required) The ID of the Subnet which this IP Configuration should be connected to.
+
+- `dns\_servers` - (Optional) A list of IP Addresses of DNS Servers which should be assigned to the Network Interface.
+- `enable\_accelerated\_networking` - (Optional) Does this Network Interface support Accelerated Networking? Defaults to false.
+- `enable\_ip\_forwarding` - (Optional) Does this Network Interface support IP Forwarding? Defaults to false.
+- `network\_security\_group\_id` - (Optional) The ID of a Network Security Group which should be assigned to this Network Interface.
+- `primary` - (Optional) Is this the Primary IP Configuration?
 `
 
 Type:
@@ -104,11 +126,14 @@ Type:
 ```hcl
 list(object({
     name = string
-    ip_configuration = list(object({
+    ip_configurations = list(object({
       name                                         = string
       application_gateway_backend_address_pool_ids = optional(list(string))
       application_security_group_ids               = optional(list(string))
       load_balancer_backend_address_pool_ids       = optional(list(string))
+      load_balancer_inbound_nat_rules_ids          = optional(list(string))
+      primary                                      = optional(bool)
+      subnet_id                                    = optional(string)
     }))
     dns_servers                   = optional(list(string))
     enable_accelerated_networking = optional(bool)
@@ -579,7 +604,7 @@ Description: The number of Virtual Machines in the Scale Set. Defaults to `0`.
 
 > **NOTE**
 >
-> If you are using AutoScaling, you may wish to use Terraform's ignore\_changes functionality to ignore changes to this field.
+> If you are using AutoScaling, you may wish to use Terraform's `ignore_changes` functionality to ignore changes to this field.
 
 Type: `number`
 
@@ -900,13 +925,13 @@ Description: The ID of the Linux Virtual Machine Scale Set.
 
 ### <a name="output_identity"></a> [identity](#output\_identity)
 
-Description: A identity block as defined below.  
-An identity block exports the following:
+Description: An `identity` block as defined below.  
+An `identity` block exports the following:
 
-- type - The type of Managed Service Identity that is configured on this Virtual Machine Scale Set.
-- principal\_id - The Principal ID of the System Assigned Managed Service Identity that is configured on this Virtual Machine Scale Set.
-- tenant\_id - The Tenant ID of the System Assigned Managed Service Identity that is configured on this Virtual Machine Scale Set.
-- identity\_ids - The list of User Assigned Managed Identity IDs assigned to this Virtual Machine Scale Set.
+- `type` - The type of Managed Service Identity that is configured on this Virtual Machine Scale Set.
+- `principal_id` - The Principal ID of the System Assigned Managed Service Identity that is configured on this Virtual Machine Scale Set.
+- `tenant_id` - The Tenant ID of the System Assigned Managed Service Identity that is configured on this Virtual Machine Scale Set.
+- `identity_ids` - The list of User Assigned Managed Identity IDs assigned to this Virtual Machine Scale Set.
 
 ### <a name="output_location"></a> [location](#output\_location)
 
@@ -921,40 +946,40 @@ Description: The name of this Linux Virtual Machine Scale Set.
 Description: A list of network\_interface blocks as defined below.  
 network\_interface exports the following:
 
-- name - The name of the network interface configuration.
-- primary - Whether network interfaces created from the network interface configuration will be the primary NIC of the VM.
-- ip\_configuration - An `ip_configuration` block as documented below.
+- `name` - The name of the network interface configuration.
+- `primary` - Whether network interfaces created from the network interface configuration will be the primary NIC of the VM.
+- `ip_configuration` - An `ip_configuration` block as documented below.
 
-  `ip_configuration`exports the following:
+  `ip_configuration` exports the following:
 
-  - name - The name of the IP configuration.
-  - subnet\_id - The the identifier of the subnet.
-  - application\_gateway\_backend\_address\_pool\_ids - An array of references to backend address pools of application gateways.
-  - load\_balancer\_backend\_address\_pool\_ids - An array of references to backend address pools of load balancers.
-  - load\_balancer\_inbound\_nat\_rules\_ids - An array of references to inbound NAT pools for load balancers.
-  - primary - If this ip\_configuration is the primary one.
-  - application\_security\_group\_ids - The application security group IDs to use.
-  - public\_ip\_address - The virtual machines scale set IP Configuration's PublicIPAddress configuration. The `public_ip_address` is documented below.
+  - `name` - The name of the IP configuration.
+  - `subnet_id` - The the identifier of the subnet.
+  - `application_gateway_backend_address_pool_ids` - An array of references to backend address pools of application gateways.
+  - `load_balancer_backend_address_pool_ids` - An array of references to backend address pools of load balancers.
+  - `load_balancer_inbound_nat_rules_ids` - An array of references to inbound NAT pools for load balancers.
+  - `primary` - If this ip\_configuration is the primary one.
+  - `application_security_group_ids` - The application security group IDs to use.
+  - `public_ip_address` - The virtual machines scale set IP Configuration's PublicIPAddress configuration. The `public_ip_address` is documented below.
 
     `public_ip_address` exports the following:
 
-    - name - The name of the public IP address configuration
-    - idle\_timeout\_in\_minutes - The idle timeout in minutes.
-    - domain\_name\_label - The domain name label for the DNS settings.
-    - ip\_tag - A list of ip\_tag blocks as defined below.
+    - `name` - The name of the public IP address configuration
+    - `idle_timeout_in_minutes` - The idle timeout in minutes.
+    - `domain_name_label` - The domain name label for the DNS settings.
+    - `ip_tag` - A list of ip\_tag blocks as defined below.
 
-      ip\_tag exports the following:
+      `ip_tag` exports the following:
 
-      - tag - The IP Tag associated with the Public IP.
-      - type - The Type of IP Tag.
+      - `tag` - The IP Tag associated with the Public IP.
+      - `type` - The Type of IP Tag.
 
-    - public\_ip\_prefix\_id - The ID of the public IP prefix.
-    - version - The Internet Protocol Version of the public IP address.
+    - `public_ip_prefix_id` - The ID of the public IP prefix.
+    - `version` - The Internet Protocol Version of the public IP address.
 
-- enable\_accelerated\_networking - Whether to enable accelerated networking or not.
-- dns\_servers - An array of the DNS servers in use.
-- enable\_ip\_forwarding - Whether IP forwarding is enabled on this NIC.
-- network\_security\_group\_id - The identifier for the network security group.
+- `enable_accelerated_networking` - Whether to enable accelerated networking or not.
+- `dns_servers` - An array of the DNS servers in use.
+- `enable_ip_forwarding` - Whether IP forwarding is enabled on this NIC.
+- `network_security_group_id` - The identifier for the network security group.
 
 ### <a name="output_resource_group_name"></a> [resource\_group\_name](#output\_resource\_group\_name)
 

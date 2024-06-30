@@ -10,4 +10,4 @@
 
 ## Description
 
-This Terraform resource module deploys a linux virtual machine scale set.
+This Terraform resource module deploys a linux virtual machine scale set. The module is used to test pre-commit.

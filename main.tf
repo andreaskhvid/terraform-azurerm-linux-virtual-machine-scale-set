@@ -35,19 +35,57 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
   zone_balance                                      = var.zone_balance
   zones                                             = var.zones
 
+  network_interface {
+    name = var.network_interfaces[0].name
+
+    ip_configuration {
+      name                                         = var.network_interfaces[0].ip_configurations[0].name
+      application_gateway_backend_address_pool_ids = var.network_interfaces[0].ip_configurations[0].application_gateway_backend_address_pool_ids
+      application_security_group_ids               = var.network_interfaces[0].ip_configurations[0].application_security_group_ids
+      load_balancer_backend_address_pool_ids       = var.network_interfaces[0].ip_configurations[0].load_balancer_backend_address_pool_ids
+      load_balancer_inbound_nat_rules_ids          = var.network_interfaces[0].ip_configurations[0].load_balancer_inbound_nat_rules_ids
+      primary                                      = var.network_interfaces[0].ip_configurations[0].primary
+      subnet_id                                    = var.network_interfaces[0].ip_configurations[0].subnet_id
+    }
+
+    dynamic "ip_configuration" {
+      for_each = length(var.network_interfaces[0].ip_configurations) > 1 ? slice(var.network_interfaces[0].ip_configurations, 1, length(var.network_interfaces[0].ip_configurations)) : []
+
+      content {
+        name                                         = ip_configuration.name
+        application_gateway_backend_address_pool_ids = ip_configuration.application_gateway_backend_address_pool_ids
+        application_security_group_ids               = ip_configuration.application_security_group_ids
+        load_balancer_backend_address_pool_ids       = ip_configuration.load_balancer_backend_address_pool_ids
+        load_balancer_inbound_nat_rules_ids          = ip_configuration.load_balancer_inbound_nat_rules_ids
+        primary                                      = ip_configuration.ip_configuration.primary
+        subnet_id                                    = ip_configuration.subnet_id
+      }
+    }
+
+    dns_servers                   = var.network_interfaces[0].dns_servers
+    enable_accelerated_networking = var.network_interfaces[0].enable_accelerated_networking
+    enable_ip_forwarding          = var.network_interfaces[0].enable_ip_forwarding
+    network_security_group_id     = var.network_interfaces[0].network_security_group_id
+    primary                       = var.network_interfaces[0].primary
+  }
+
   dynamic "network_interface" {
-    for_each = var.network_interfaces
+    for_each = length(var.network_interfaces) > 1 ? slice(var.network_interfaces, 1, length(var.network_interfaces)) : []
 
     content {
       name = network_interface.name
 
       dynamic "ip_configuration" {
-        for_each = network_interface.ip_configuration
+        for_each = length(var.network_interfaces) > 1 ? [] : network_interface.ip_configuration
 
         content {
-          name      = ip_configuration.name
-          primary   = ip_configuration.primary
-          subnet_id = ip_configuration.subnet_id
+          name                                         = ip_configuration.name
+          application_gateway_backend_address_pool_ids = ip_configuration.application_gateway_backend_address_pool_ids
+          application_security_group_ids               = ip_configuration.application_security_group_ids
+          load_balancer_backend_address_pool_ids       = ip_configuration.load_balancer_backend_address_pool_ids
+          load_balancer_inbound_nat_rules_ids          = ip_configuration.load_balancer_inbound_nat_rules_ids
+          primary                                      = ip_configuration.ip_configuration.primary
+          subnet_id                                    = ip_configuration.subnet_id
         }
       }
 
@@ -80,7 +118,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
   }
 
   dynamic "additional_capabilities" {
-    for_each = var.additional_capabilities == null ? [] : var.additional_capabilities
+    for_each = var.additional_capabilities == null ? {} : var.additional_capabilities
 
     content {
       ultra_ssd_enabled = additional_capabilities.ultra_ssd_enabled
@@ -88,7 +126,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
   }
 
   dynamic "admin_ssh_key" {
-    for_each = var.admin_ssh_keys == null ? [] : var.admin_ssh_keys
+    for_each = var.admin_ssh_keys == null ? {} : {
+      for idx, value in var.admin_ssh_keys : value.username => value
+    }
 
     content {
       public_key = admin_ssh_key.public_key
@@ -140,7 +180,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
   }
 
   dynamic "extension" {
-    for_each = var.extensions == null ? [] : var.extensions
+    for_each = var.extensions == null ? {} : {
+      for idx, value in var.extensions : value.name => value
+    }
 
     content {
       name                       = extension.name
@@ -153,7 +195,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
       protected_settings         = extension.protected_settings
 
       dynamic "protected_settings_from_key_vault" {
-        for_each = extension.protected_settings_from_key_vault == null ? {} : extension.protected_settings_from_key_vault
+        for_each = var.extensions == null ? {} : (
+          extension.protected_settings_from_key_vault == null ? {} : extension.protected_settings_from_key_vault
+        )
 
         content {
           secret_url      = protected_settings_from_key_vault.secret_url
@@ -178,7 +222,9 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
   }
 
   dynamic "identity" {
-    for_each = var.identity == null ? {} : var.identity
+    for_each = var.identity == null ? {} : {
+      identity = var.identity
+    }
 
     content {
       type         = identity.type
@@ -223,7 +269,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "this" {
 
     content {
       dynamic "certificate" {
-        for_each = secret.certificate
+        for_each = var.secrets == null ? [] : secret.certificate
 
         content {
           url = certificate.url
